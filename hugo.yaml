@@ -1,0 +1,49 @@
+baseURL: https://docs.yo1o.top/
+locale: zh-CN
+title: Yolo's Docs
+
+
+module:
+  imports:
+    - path: github.com/imfing/hextra
+
+params:
+  search:
+    enable: true
+    type: flexsearch
+    flexsearch:
+      index: content
+      tokenize: forward
+  
+  navbar:
+    displaySearch: true
+    displayTitle: true
+
+  comments:
+    enable: false
+    type: giscus
+    giscus:
+      repo: Yo1o-sir/comments
+      repoID: R_kgDOSHsH3g
+      category: Announcements
+      categoryID: DIC_kwDOSHsH3s4C7R2K
+
+  imageZoom:
+    enable: true
+
+menu:
+  main:
+    - name: docs
+      pageRef: /docs
+      weight: 1
+      params:
+        icon: document
+    - name: blog
+      url: https://yo1o.top
+      weight: 2
+      params:
+        icon: emoji-happy
+    - name: search
+      weight: 3
+      params:
+        type: search
