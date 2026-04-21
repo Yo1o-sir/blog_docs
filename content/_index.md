@@ -9,6 +9,6 @@ cascade:
 
 爱你老己！
 
-> 对自己好点
+>对自己好点
 
-我的主站是:[https://yo1o.top](https://yo1o.top)，里面会记录一些杂谈啥的
+我的主站 [https://yo1o.top](https://yo1o.top)，里面会记录一些杂谈，日常啥的

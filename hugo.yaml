@@ -38,7 +38,7 @@ menu:
       weight: 1
       # params:
       #   icon: document
-    - name: blog
+    - name: blog主站
       url: https://yo1o.top
       weight: 2
       # params:
@@ -47,3 +47,9 @@ menu:
       weight: 3
       params:
         type: search
+
+    - name: github
+      url: https://github.com/Yo1o-sir
+      weight: 4
+      params:
+        icon: github
