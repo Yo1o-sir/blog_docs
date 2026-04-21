@@ -36,13 +36,13 @@ menu:
     - name: docs
       pageRef: /docs
       weight: 1
-      params:
-        icon: document
+      # params:
+      #   icon: document
     - name: blog
       url: https://yo1o.top
       weight: 2
-      params:
-        icon: emoji-happy
+      # params:
+      #   icon: emoji-happy
     - name: search
       weight: 3
       params:
