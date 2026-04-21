@@ -53,3 +53,8 @@ menu:
       weight: 4
       params:
         icon: github
+
+markup:
+  goldmark:
+    renderer:
+      unsafe: true
