@@ -713,11 +713,389 @@ void phase_5(long param_1)
   } while (lVar2 != 6);
 ```
 
-*还剩两个炸弹了，等晚上我继续*
+这是核心步骤，用图片看会轻松点
+
+![simplify](./index.assets/image-20260423184046641.png)
+
+可以大致读出来这是一个创建表的过程吧，我用`lVar2=1`来举例，至于这里的`param_1`，我就随意写个`pyccsb`满足六个字母条件即可
+
+先看左边`local_17[1]`它是在写入元素到local_17数组中，当前写的是第二个元素
+
+然后看右式`plain[*(byte *)(param_1 + lVar2) & 0xf]`
+
+前面的`*(byte *)`不作考虑分析，仅仅是申明元素类型为字节，不懂可以直接跳过
+
+`(param_1 + lVar2)`的作用是指向param_1字符串的某个字母，当前的lVar2是1，那么这里指向的就是第二个字母`y`，需要注意，二进制中，这些字符都是以ASCII值的形式参与运算操作的，我用python快速查下
+
+```bash
+yolo@Yolo:~$ python -c "print(ord('y'))"
+121
+```
+
+最后一部分的`& 0xf`换算一下，就是`& 15`，这个与运算的作用是让结果小于等于15，就拿上面的`y`来举例：
+
+```text
+	0111 1001 (121)
+	0000 1111 (15)
+&____________________
+	0000 1001 (9)
+```
+
+一样，我给这里放上怎么用python快速求
+
+```bash
+yolo@Yolo:~$ python -c "print(ord('y')&15)"
+9
+```
+
+好啦，那么我刚刚把`[*(byte *)(param_1 + lVar2) & 0xf]`化简整理成`[9]`,如果前面是一个字符串，那么组合起来的作用就是提取出字符串中索引为9的字符，在这里就应该是f（索引从0开始，f恰好是第10个字母
+
+应该get到本题的考点了吧，通过处理读取的6个字母，逐个字母与15进行与运算，然后读取密文表获得映射后的值，那么我们先写个字典对比吧（这里的与15操作有个很直观的概念，就是扣字符的低4位，转换成8位二进制自己看看
+
+```text
+索引 0 → 'm'
+索引 1 → 'a'
+索引 2 → 'd'
+索引 3 → 'u'
+索引 4 → 'i'
+索引 5 → 'e'
+索引 6 → 'r'
+索引 7 → 's'
+索引 8 → 'n'
+索引 9 → 'f'
+索引 10 → 'o'
+索引 11 → 't'
+索引 12 → 'v'
+索引 13 → 'b'
+索引 14 → 'y'
+索引 15 → 'l'
+```
+
+下一步要读的代码是这里：
+
+```c
+iVar1 = strings_not_equal(local_17,"bruins"); 
+if (iVar1 == 0) {
+    if (local_10 == *(long *)(in_FS_OFFSET + 0x28)) {
+      return;
+    }
+                    /* WARNING: Subroutine does not return */
+    __stack_chk_fail();
+  }
+```
+
+首先配置了一个bool变量iVar1，它是函数strings_not_equal作用的结果，这个函数可以回顾phase_1，我有讲过，如果对比的两个字符串相同，会返回0，否则是1
+
+然后这里的local_17就是读取param_1的字符串后编码得到的密文
+
+现在的情况就是我们知道了密文，需要找到得到密文的原文，方法不难，先看目标索引值：
+
+```text
+bruins 在密文表中的索引：
+b → 13
+r → 6
+u → 3
+i → 4
+n → 8
+s → 7
+```
+
+接下来我们要做的是在可打印字符中找到低4位恰好是索引值的6个字符
+
+有个特别简单的方法，首先找一个低4位全是0的字符，我这里就用ASCII为96的字符反引号,打不出来:(
+
+```bash
+yolo@Yolo:~$ echo -n '`' | xxd -b
+00000000: 01100000
+```
+
+查看那个`0110 0000`，低4位恰好是0，如果在这个基础上加上小于16的数，可以保证低四位就是我们要找的那些索引
+
+```bash
+yolo@Yolo:~$ python -c "print((ord('\`')+13)&15)"
+13
+```
+
+> 这里的反斜杠很关键，因为在bash中，反引号可能会被当作命令处理，用反斜杠可以得到一个单纯的字符反斜杠，否则会报错
+
+这个结果已经很美了，再处理下变成字符
+
+```bash
+yolo@Yolo:~$ python -c "print(chr(ord('\`')+13))"
+m
+yolo@Yolo:~$ python -c "print(chr(ord('\`')+6))"
+f
+yolo@Yolo:~$ python -c "print(chr(ord('\`')+3))"
+c
+yolo@Yolo:~$ python -c "print(chr(ord('\`')+4))"
+d
+yolo@Yolo:~$ python -c "print(chr(ord('\`')+8))"
+h
+yolo@Yolo:~$ python -c "print(chr(ord('\`')+7))"
+g
+```
+
+所以说应该写入的答案应该是`mfcdhg`
+
+### phase_6
+
+最后一个关卡代码有点多,拆成三部分读
+
+```c
+
+void phase_6(undefined8 param_1)
+
+{
+  int iVar1;
+  undefined1 *puVar2;
+  long lVar3;
+  int *piVar4;
+  long lVar5;
+  long in_FS_OFFSET;
+  int local_88 [8];
+  int *local_68;
+  long local_60;
+  long local_58;
+  long local_50;
+  long local_48;
+  long local_40;
+  long local_30;
+  
+  piVar4 = local_88;
+  local_30 = *(long *)(in_FS_OFFSET + 0x28); //栈保护，忽略
+  read_six_numbers(param_1,local_88); //此函数已经在phase_2中分析过，作用是读取6个数字
+  lVar5 = 1; //定义某个状态量为1
+  while( true ) {
+    if (5 < *piVar4 - 1U) { //这里的*piVar4实质上指向我们输入的6个数，这里也存在一个坑，无符号整数参与运算，要避免下溢，口算了下，只能填写1,2,3,4,5,6(理论上我写6个3也没有非法处理)
+                    /* WARNING: Subroutine does not return */
+      explode_bomb();
+    }
+    lVar3 = lVar5; // 1
+    if (5 < (int)lVar5) break;
+    do {
+      if (*piVar4 == local_88[lVar3]) {//禁止重复，上面想偷的懒也被算到了，只能填写{1,2,3,4,5,6}的一个全排列
+                    /* WARNING: Subroutine does not return */
+        explode_bomb();
+      }
+      lVar3 = lVar3 + 1;
+    } while ((int)lVar3 < 6);
+    lVar5 = lVar5 + 1;
+    piVar4 = piVar4 + 1;
+  }
+```
+
+上一部分感觉是处理元素列表，并查重，暂时好分析，下一部分才是本次挑战的关键代码（坏消息，数据结构忘完了
+
+```c
+lVar5 = 0;
+  do {
+    iVar1 = 1; //初始化索引值
+    puVar2 = node1;  //全局链表头
+    if (1 < local_88[lVar5]) { //lVar5已经被更新到最后一位了
+      do {
+        puVar2 = *(undefined1 **)((long)puVar2 + 8); //让指针puVar2指向下一个指针，可以大致体会到，每一个节点的value和ID区域共8字节，跳过8字节后就到达next指针了，关于这里为啥会有ID区域，我后面会提供汇编看的
+        iVar1 = iVar1 + 1; //更新索引值
+      } while (iVar1 != local_88[lVar5]);
+    }
+    (&local_68)[lVar5] = (int *)puVar2;
+    lVar5 = lVar5 + 1;
+  } while (lVar5 != 6); //简单来说就是按数字选节点
+  *(long *)(local_68 + 2) = local_60; 
+  *(long *)(local_60 + 8) = local_58;
+  *(long *)(local_58 + 8) = local_50;
+  *(long *)(local_50 + 8) = local_48;
+  *(long *)(local_48 + 8) = local_40;
+  *(undefined8 *)(local_40 + 8) = 0;
+//[你输入的第1个节点] -> [第2个] -> [第3个] -> [第4个] -> [第5个] -> [第6个] -> NULL
+```
+
+我这样介绍吧，这里是通过1~6的全排列进行映射，将所有存储在汇编的.data或.rodata段中定义的6个节点按照我们输入的全排列进行排序，最终我们能获取到一个包含6个节点指针的数组
+
+比如说顺序是654321，这部分代码处理完，我们就得到了数组[node6,node5,node4,node3,node2,node1]
+
+接下来就是最后一部分关键代码了
+
+```c
+iVar1 = 5;
+  do {
+    if (**(int **)(local_68 + 2) < *local_68) {//遍历数组中的节点，判断当前节点的值是否大于等于下一个节点的值，如果不是，就会Boom，这也就意味着我们自定义的node链表必须走顺序，从低到高，可以保证下一个节点值大于当前节点
+                    /* WARNING: Subroutine does not return */
+      explode_bomb();
+    }
+    local_68 = *(int **)(local_68 + 2);
+    iVar1 = iVar1 + -1;
+  } while (iVar1 != 0);
+  if (local_30 != *(long *)(in_FS_OFFSET + 0x28)) {
+                    /* WARNING: Subroutine does not return */
+    __stack_chk_fail();
+  }
+  return;
+}
+```
+
+呼~，这最后一关卡代码总算读完了
+
+<img src="./index.assets/c3cf3df374b59b441a25319ecea88add.jpg" alt="呼~" style="zoom:50%;" />
+
+通过上述分析，我们知道本题的解题要求是找到二进制程序内部存储的6个node值的大小，并进行排序，按照降序，然后将对应的索引值作为答案提交
+
+查看所有node的方法可以直接通过暴力搜索，首先点击中间的汇编代码区域，使用ctrl+f调出查找框，然后输入node，关于过滤fields应该选择`All Fields`，然后`Search All`
+
+![find](./index.assets/image-20260423210357784.png)
+
+我标注了6处
+
+![nodes](./index.assets/image-20260423223907917.png)
+
+可以看到哈，这里显然存在小坑，如果我们不通过暴力搜索的话，node6不是很轻松找到，它对应的偏移是0x405210,这与其它node差距很大很大，一时半会可能无法找到
+
+这里我就举一个例子哈，双击node6,回到汇编代码中查看，还记得我在第二段代码分析中说到的节点大小嘛？是4+4+8=16字节，前4个字节是数值，中间4个字节是node_id，后8个字节是next指针
+
+```
+                             node6                                           XREF[1]:     Entry Point (*)   
+        00405210 38  00  00       undefine
+                 00  06  00 
+                 00  00  00 
+           00405210 38              undefine  38h                     [0]                               XREF[1]:     Entry Point (*)   
+           00405211 00              undefine  00h                     [1]
+           00405212 00              undefine  00h                     [2]
+           00405213 00              undefine  00h                     [3]
+           00405214 06              undefine  06h                     [4]
+           00405215 00              undefine  00h                     [5]
+           00405216 00              undefine  00h                     [6]
+           00405217 00              undefine  00h                     [7]
+           00405218 00              undefine  00h                     [8]
+           00405219 00              undefine  00h                     [9]
+           0040521a 00              undefine  00h                     [10]
+           0040521b 00              undefine  00h                     [11]
+           0040521c 00              undefine  00h                     [12]
+           0040521d 00              undefine  00h                     [13]
+           0040521e 00              undefine  00h                     [14]
+           0040521f 00              undefine  00h                     [15]
+
+```
+
+既然这样的话，我们能确定node6对应的值应该是0x38(一定要看后面16个值，按照4+4+8)
+
+索引为4的值是0x06,恰好代表这个node是node6,至于剩下的值都是0，我觉得也能解释，因为一共6个节点，链表如果排完后，最后肯定是NULL
+
+剩下的几个node我就不一一列举了，不过这里说明下，可能会遇到下面这样看不到完整内容的情况,点击框框里的+号就能展开了
+
+![cantsee](./index.assets/image-20260423225852116.png)
+
+我来说说我的二进制中各个node的值
+
+| node1  | node2  | node3 | node4  | node5  | node6 |
+| ------ | ------ | ----- | ------ | ------ | ----- |
+| 0x018a | 0x0204 | 0x7e  | 0x02f0 | 0x0120 | 0x38  |
+
+用python快速转换十进制
+
+```bash
+◎ python -c "print(0x18a,0x204,0x7e,0x2f0,0x120,0x38)"                                                          ⌂ 23:03
+394 516 126 752 288 56
+```
+
+---
+
+最后一次扩展了吧，大家还记得我在start里进行的架构检查嘛，这个二进制程序是64位架构小端序，如果看到某个寄存器中存了多个字节的值，一定不要按照偏移顺序读，必须必须必须倒序读，就拿node1举个例子
+
+![node1](./index.assets/image-20260423230548497.png)
+
+这里读取的node1的值的错误答案是0x8a01,正确答案是0x18a,至于大端序和小端序，看书去吧，或者拷打拷打ai
+
+---
+
+这个结果`394 516 126 752 288 56`是我按照顺序node看的值，我们上面分析过，需要重排列的node必须是按照顺序，从低到高排列的，那么正确的答案应该是`6 3 5 1 2 4`
+
+## 提交答案
+
+呼，理论上我们的拆弹旅程快要结束了，临门一脚了，一定要漂漂亮亮的提交
+
+- 提交第一个
+
+  - ```bash
+    echo "I am not part of the problem. I am a Republican." > B24041429.txt
+    ```
+
+- 提交第二个
+
+  - ```bash
+    echo "0 1 1 2 3 5" >> B24041429.txt
+    ```
+
+  - 这里的`>>`不能忽略，否则会覆盖第一次提交
+
+- 提交第三个
+
+  - ```bash
+     echo "1 309" >> B24041429.txt
+    ```
+
+- 提交第四个
+
+  - ```bash
+    echo "36 3" >> B24041429.txt
+    ```
+
+- 提交第五个
+
+  - ```bash
+    echo "mfcdhg" >> B24041429.txt
+    ```
+
+- 提交第六个
+
+  - ```bash
+    echo "6 3 5 1 2 4" >> B24041429.txt
+    ```
+
+- 检查下提交过的内容
+
+  - ```bash
+    B24041429@ICS:~/bombk$ xxd B24041429.txt
+    00000000: 4920 616d 206e 6f74 2070 6172 7420 6f66  I am not part of
+    00000010: 2074 6865 2070 726f 626c 656d 2e20 4920   the problem. I 
+    00000020: 616d 2061 2052 6570 7562 6c69 6361 6e2e  am a Republican.
+    00000030: 0a30 2031 2031 2032 2033 2035 0a31 2033  .0 1 1 2 3 5.1 3
+    00000040: 3039 0a33 3620 330a 6d66 6364 6867 0a36  09.36 3.mfcdhg.6
+    00000050: 2033 2035 2031 2032 2034 0a               3 5 1 2 4.
+    ```
+
+- 运行
+
+  - ```bash
+    B24041429@ICS:~/bombk$ ./bomb B24041429.txt
+    Welcome to my fiendish little bomb. You have 6 phases with
+    which to blow yourself up. Have a nice day!
+    Phase 1 defused. How about the next one?
+    That's number 2.  Keep going!
+    Halfway there!
+    So you got that one.  Try this one.
+    Good work!  On to the next...
+    Congratulations! You've defused the bomb!
+    Your instructor has been notified and will verify your solution.
+    B24041429@ICS:~/bombk$ ls
+    B24041429.txt  B24041429.TXT  bomb  bomb.c  README
+    B24041429@ICS:~/bombk$ cat README 
+    This is bomb 209.
+    
+    It belongs to B24041429 (b24041429@njupt.edu.cn)
+    ```
+
+- 测试成功，Win!!!（我是满分哦
+
+![截图留念](./index.assets/image-20260423232253728.png)
+
+## summary
+
+爽歪歪，这次实验确实很有意思，老师上课讲到的部分知识确实有用到，接下来要做的是尽快完善对应的实验报告
+
+> 看到这里，大家应该都学到不少了吧，能帮助到大家也挺不错的，实验报告自己写昂，要我写也不是不行，至少请几杯奶茶吧，哈哈哈
 
 
 
-
+<img src="./index.assets/bd83e77056a59897a413207a0248fa80.jpg" alt="爽" style="zoom: 80%;" />
 
 
 
