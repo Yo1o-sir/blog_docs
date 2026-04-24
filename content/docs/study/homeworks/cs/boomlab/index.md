@@ -890,16 +890,17 @@ void phase_6(undefined8 param_1)
 lVar5 = 0;
   do {
     iVar1 = 1; //初始化索引值
-    puVar2 = node1;  //全局链表头
-    if (1 < local_88[lVar5]) { //lVar5已经被更新到最后一位了
+    puVar2 = node1;  //全局链表头，每次从头开始遍历
+    if (1 < local_88[lVar5]) { //lVar5初始化到第0位了，而且
       do {
         puVar2 = *(undefined1 **)((long)puVar2 + 8); //让指针puVar2指向下一个指针，可以大致体会到，每一个节点的value和ID区域共8字节，跳过8字节后就到达next指针了，关于这里为啥会有ID区域，我后面会提供汇编看的
         iVar1 = iVar1 + 1; //更新索引值
       } while (iVar1 != local_88[lVar5]);
     }
-    (&local_68)[lVar5] = (int *)puVar2;
+    (&local_68)[lVar5] = (int *)puVar2; //保存找到的节点地址
     lVar5 = lVar5 + 1;
   } while (lVar5 != 6); //简单来说就是按数字选节点
+//下面是按照输入的数字序列将6个节点重新链接
   *(long *)(local_68 + 2) = local_60; 
   *(long *)(local_60 + 8) = local_58;
   *(long *)(local_58 + 8) = local_50;
@@ -978,6 +979,16 @@ iVar1 = 5;
 既然这样的话，我们能确定node6对应的值应该是0x38(一定要看后面16个值，按照4+4+8)
 
 索引为4的值是0x06,恰好代表这个node是node6,至于剩下的值都是0，我觉得也能解释，因为一共6个节点，链表如果排完后，最后肯定是NULL
+
+我这里推测出这样的结构体
+
+```c
+struct Node {
+    int value;      // 0~3 字节
+    int node_id;         // 4~7 字节（maybe）
+    Node* next;     // 8~15 字节
+};
+```
 
 剩下的几个node我就不一一列举了，不过这里说明下，可能会遇到下面这样看不到完整内容的情况,点击框框里的+号就能展开了
 
@@ -1096,6 +1107,272 @@ iVar1 = 5;
 
 
 <img src="./index.assets/bd83e77056a59897a413207a0248fa80.jpg" alt="爽" style="zoom: 80%;" />
+
+## 番外
+
+我写报告的时候发现这里存在7个阶段，但是我只遇到了6个phase啊，再结合scoreboard里，有同学`Phases defused`次数最高为7次，我仅仅是6次
+
+这里显然存在一个隐藏关卡（找老师确认过的
+
+回忆main函数里哪些函数我没有分析，范围很小了，仅仅有`read_line()`和`phase_defused()`，也许后者并不是状态量检测？具体还是需要进行逆向分析
+
+### phase_defaused
+
+```c
+void phase_defused(void)
+
+{
+  int iVar1;
+  long in_FS_OFFSET;
+  undefined1 local_70 [4];
+  undefined1 local_6c [4];
+  undefined1 local_68 [88];
+  long local_10;
+  
+  local_10 = *(long *)(in_FS_OFFSET + 0x28);
+  send_msg(1); //关键函数1
+  if (num_input_strings == 6) { //这个变量应该是全局变量，需要找到定义点
+    iVar1 = __isoc99_sscanf(0x405910,"%d %d %s",local_70,local_6c,local_68); //看这里的读取，是两个整数加一个字符串
+    if (iVar1 == 3) {
+      iVar1 = strings_not_equal(local_68,"DrEvil"); //对比第三个字符串是不是DrEvil
+      if (iVar1 == 0) { //对比成功，进入隐藏关卡
+        puts("Curses, you\'ve found the secret phase!");
+        puts("But finding it and solving it are quite different...");
+        secret_phase(); //关键函数2
+      }
+    }
+    puts("Congratulations! You\'ve defused the bomb!");
+    puts("Your instructor has been notified and will verify your solution.");
+  }
+  if (local_10 == *(long *)(in_FS_OFFSET + 0x28)) {
+    return;
+  }
+                    /* WARNING: Subroutine does not return */
+  __stack_chk_fail();
+}
+```
+
+看到`secret phase`就知道这里找对了
+
+- `send_msg()`这个函数我看过了，是负责将我们的成功信息发送给服务器的，嗯，让服务器给我们加分用的，而且相对来说挺复杂的，这里我就不占用篇幅来分析了，对彩蛋关卡没有帮助
+- `num_input_strings`这是一个全局变量，需要找到交叉引用这个变量的地方，然后还要找到和写入操作相关的函数
+  - 选中这个变量后右键,点击`References->Find References to num_input_strings`
+    - ![xf](./index.assets/image-20260424094951324.png)
+  - 这个时候一定能看到这样的面板，我标注了两处write操作的引用
+    - ![write](./index.assets/image-20260424095159087.png)
+  - 挨个看呗
+- `read_line()`第一个write引用就带我们找到位置了，看看下面的截图
+  - ![bingo](./index.assets/image-20260424095445348.png)
+  - 这里的加一操作为我们解惑了，每读一次数据，都会为全局变量num_input_strings+1，这样看的话，隐藏关卡必须在前6关pass后才能触发一部分（还有其它条件
+
+触发隐藏关卡的后半部分就是这句
+
+```c
+    iVar1 = __isoc99_sscanf(0x405910,"%d %d %s",local_70,local_6c,local_68);
+    if (iVar1 == 3) {
+      iVar1 = strings_not_equal(local_68,"DrEvil");
+      if (iVar1 == 0) {
+        puts("Curses, you\'ve found the secret phase!");
+        puts("But finding it and solving it are quite different...");
+        secret_phase();
+      }
+```
+
+iVar1要读取地址为0x405910处的三个值，两个整数，一个字符串，如果那个字符串恰好是DrEvil才能调用`secret_phase()`
+
+### read_line
+
+但是问题来了，0x405910所在的位置明显是缓冲区，周围都是空白数据，我们接下来要做的是找到是谁申请的这一块缓冲区，以及缓冲区里预计要写哪些数据，好在这里的`read_line()`特别直接，写明它是怎么调用的了
+
+```c
+  iVar1 = num_input_strings; //保存当前num_input_strings到iVar1中，初始0
+  lVar2 = (long)num_input_strings; //转换64位索引，用于指针运算
+  sVar3 = strlen(input_strings + lVar2 * 0x50); //确认存储在缓冲区的内容长度
+  if ((int)sVar3 < 0x4f) { //长度必须小于79b,所以最多78个非空字符,留一个存储\0
+    input_strings[(long)((int)sVar3 + -1) + (long)iVar1 * 0x50] = 0; //将元素中最后一个字节，通常来说应该是换行符'\n'，替换成'\0'
+    num_input_strings = iVar1 + 1; //将索引值更新
+    return input_strings + lVar2 * 0x50; //返回fix后的内容
+  }
+```
+
+我上面截取的部分代码的作用是将逐行读取的字符串的末尾换行符\n替换掉\0，乍一看感觉对我们找触发彩蛋关系不是很大，但是我们能从中找到两个关键信息：
+
+- 缓冲区就是input_strings申请的数组
+- 数组内的每个元素大小是0x50=80字节
+
+双击那个input_strings能让左侧汇编窗口快速跳转缓冲区，上面的那个240什么信息我暂时没搞清楚为啥会这样，也许是Ghidra的小bug?不用管，可以向下查看缓冲区长度，会发现索引值一直到1599，一共1600b的空间，一个数组占据80字节，理论上甚至能装20个数组
+
+![input_strings](./index.assets/image-20260424121850416.png)
+
+接下来再回忆下我们上面需要确定的地址：0x405910
+
+目标地址恰好在input_strings数组缓冲区中(0x405820~0x405e5f)
+
+简单算算，就按照80为步长
+
+```bash
+>>> hex(0x405820 + 80*0)
+'0x405820'
+>>> hex(0x405820 + 80*1)
+'0x405870'
+>>> hex(0x405820 + 80*2)
+'0x4058c0'
+>>> hex(0x405820 + 80*3)
+'0x405910'
+```
+
+win了，这里的触发点应该是在phase_4，那么我应该在phase_4的正确答案基础上，再加个字符串，应该是这样的：`36 3 DrEvil`
+
+---
+
+扩展下，应该会有人疑惑，这里的phase_4只能读取两个数字啊，这里的字符串写进去不会报错？
+
+![phase_4](./index.assets/image-20260424122935871.png)
+
+可以这样解释，解释器在读取参数的时候，会先统一将所有数据存储在上面讲的缓冲区里，然后再按照格式化参数读取数据，比如这里就是`"%d %d"`它只能利用`数字+空格+数字`，至于它后面有没有数据，程序并不在乎，只要缓冲区没有溢出，程序不奔溃，后面可以任意写的
+
+---
+
+### secret_phase
+
+截止到这里，我们仅仅做到了触发隐藏关卡，具体怎么通关还需要分析函数`secret_phase()`
+
+```c
+void secret_phase(void)
+
+{
+  int iVar1;
+  char *__nptr;
+  ulong uVar2;
+  
+  __nptr = (char *)read_line();//等待我在终端中输入一行字符串
+  uVar2 = strtol(__nptr,(char **)0x0,10); //将字符串转换成长整数存入uVar2
+  if (1000 < (int)uVar2 - 1U) { //长整数的值范围[1,1001]
+                    /* WARNING: Subroutine does not return */
+    explode_bomb();
+  }
+  iVar1 = fun7(n1,uVar2 & 0xffffffff); //关键函数fun7,应该会返回一个数字
+  if (iVar1 == 2) { //上面返回的数字如果是2，我就真的通关了
+    puts("Wow! You\'ve defused the secret stage!");
+    phase_defused();
+    return;
+  }
+                    /* WARNING: Subroutine does not return */
+  explode_bomb();
+}
+```
+
+### fun7
+
+```c
+int fun7(int *param_1,int param_2)
+
+{
+  int iVar1;
+  
+  if (param_1 != (int *)0x0) { //空节点就Boom
+    if (param_2 < *param_1) { //输入值<节点值
+      iVar1 = fun7(*(undefined8 *)(param_1 + 2)); //param_1是int4字节，+2会偏移8字节，恰好指向左子节点指针，也就是说当我们输入小于当前节点，就会递归调用左子节点，并且返回值乘2
+      iVar1 = iVar1 * 2;
+    }
+    else { //输入值>=节点值
+      iVar1 = 0; //假设iVar1=0，输入值==节点值就不会进入下面的if了
+      if (*param_1 != param_2) { //排除不等的情况，输入值>节点值
+        iVar1 = fun7(*(undefined8 *)(param_1 + 4)); //右偏移，并且返回值乘2+1
+        iVar1 = iVar1 * 2 + 1;
+      }
+    }
+    return iVar1;
+  }
+  return -1;
+}
+```
+
+很清晰的二叉搜索树BST遍历算法
+
+通关条件是`fun7(n1,input)==2`
+
+将这个返回值倒推一下吧
+
+- 找到目标：返回0
+- 如果目标值比当前值大，向右边查找：返回值x2+1
+- 如果目标值比当前值小，向左边查找：返回值x2
+
+我们接下来要做的应该是画出这个二叉树，需要找到不同节点对应的值，这个不难，可以双击`secret_parse`函数中的这一句`iVar1 = fun7(n1,uVar2 & 0xffffffff);`里的n1,应该能得到下面这张图
+
+![n1](./index.assets/image-20260424170553300.png)
+
+各个节点的值确实是前四字节，但是应该有人会问，这个值是怎么确定为前四字节的，明明内存栈上后面还有值啊，我来解释下，可以看看fun7的函数签名
+
+![fun7](./index.assets/image-20260424170919428.png)
+
+这里的fun7只能读取两个int参数，一个int参数也就4字节，后面的内存内容，fun7根本读不了，因此我才说各个节点的值都是前四字节，就按照我上面的方法吧，把各个节点的值记录下来
+
+我先画下这个二叉树：
+
+<img src="./index.assets/Screenshot_2026-04-24-16-56-12-16_f019c1a0ba3b2cc.jpg" alt="二叉树" style="zoom:50%;" />
+
+正确答案确实是22，我给大家说说遍历流程哈（温馨提示，这里涉及数据结构的pop,push的相关知识，务必复习下
+
+- `fun7(36,22)`,当前值大于目标值，需要向左查找，返回值需要:`result*2`
+- `fun7(8,22)`,当前值小于目标值，需要向右查找，返回值需要:`result*2+1`
+- `fun7(22,22)`,当前值等于目标值，返回值为0
+
+当我们查找到值的时候，需要从栈顶向下获取返回值，那就只能倒着来了
+
+`0 -> 2*0+1=1 -> 2*1=2`，这就是2的来源，如果还是感觉抽象，可以看看下面的gif动态图，是Gemini生成的，效果还不错
+
+![poppush](./index.assets/poppush.gif)
+
+### submit
+
+这个隐藏关卡的答案已经出来了，就是22，那么怎么提交呢？
+
+先触发隐藏关卡，然后第七行写上22吧
+
+赢啦!!!
+
+```bash
+B24041429@ICS:~/bombk$ cat B24041429.txt 
+I am not part of the problem. I am a Republican.
+0 1 1 2 3 5
+1 309
+36 3 DrEvil
+mfcdhg
+6 3 5 1 2 4
+22
+B24041429@ICS:~/bombk$ ./bomb B24041429.txt 
+Welcome to my fiendish little bomb. You have 6 phases with
+which to blow yourself up. Have a nice day!
+Phase 1 defused. How about the next one?
+That's number 2.  Keep going!
+Halfway there!
+So you got that one.  Try this one.
+Good work!  On to the next...
+Curses, you've found the secret phase!
+But finding it and solving it are quite different...
+Wow! You've defused the secret stage!
+Congratulations! You've defused the bomb!
+Your instructor has been notified and will verify your solution.
+```
+
+![win](./index.assets/image-20260424172206900.png)
+
+## summary+
+
+到这里应该算是完美的做完了实验（实验报告我一会儿补
+
+有一点点想法，自己一个人读汇编，读伪代码，真的很有意思，算是在ctf赛道以外第一次这么上心的一次操作题
+
+还有啊，这样简单的代码我下次就不要想当然去跳过一些函数了，这里的隐藏关卡本来很明显的摆在我的面前，我硬是没有意识到，以为那个`phase_defaused`和`read_line`单纯是个状态函数，没有什么大的用途就跳过了
+
+还好老师提醒了一下下，最终完成了，感觉还挺不错，结尾补上今天看到的大橘老师吧
+
+![大橘为重](./index.assets/c7ae0cea2647cc4bda49e242eddfce2a.jpg)
+
+
+
+
 
 
 
