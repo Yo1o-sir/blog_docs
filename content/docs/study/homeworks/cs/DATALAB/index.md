@@ -1,5 +1,5 @@
 ---
-title: DATALAB
+title: datalab
 weight: 1
 comments: true
 type: docs
