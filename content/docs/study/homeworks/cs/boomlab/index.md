@@ -1,5 +1,5 @@
 ---
-title: datalab
+title: boomlab
 weight: 2
 comments: true
 type: docs
