@@ -36,21 +36,24 @@ menu:
     - name: docs
       pageRef: /docs
       weight: 1
+    - name: shares
+      pageRef: /shares
+      weight: 2
       # params:
       #   icon: document
     - name: blog主站
       url: https://yo1o.top
-      weight: 2
+      weight: 3
       # params:
       #   icon: emoji-happy
     - name: search
-      weight: 3
+      weight: 4
       params:
         type: search
 
     - name: github
       url: https://github.com/Yo1o-sir
-      weight: 4
+      weight: 5
       params:
         icon: github
 
