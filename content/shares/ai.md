@@ -1,5 +1,5 @@
 ---
-title: ai&Rrovider
+title: ai&Provider
 weight: 2
 comments: true
 type: docs
