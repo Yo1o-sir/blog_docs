@@ -12,3 +12,4 @@ type: docs
 - [NSSCTF](https://www.nssctf.cn/)
 - [CTFShow](https://ctf.show)
 - [ctf::review](https://gz.imxbt.cn)
+- [cryptohack](https://cryptohack.org/challenges/)
