@@ -33,12 +33,18 @@ params:
 
 menu:
   main:
-    - name: docs
-      pageRef: /docs
+    - name: 刷题
+      pageRef: /training
       weight: 1
+    - name: study
+      pageRef: /study
+      weight: 2 
+    - name: 大杂烩
+      pageRef: /misc
+      weight: 3
     - name: shares
       pageRef: /shares
-      weight: 2
+      weight: 4
       # params:
       #   icon: document
     - name: blog主站
