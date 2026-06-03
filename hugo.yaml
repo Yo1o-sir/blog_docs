@@ -49,17 +49,17 @@ menu:
       #   icon: document
     - name: blog主站
       url: https://yo1o.top
-      weight: 3
+      weight: 5
       # params:
       #   icon: emoji-happy
     - name: search
-      weight: 4
+      weight: 6
       params:
         type: search
 
     - name: github
       url: https://github.com/Yo1o-sir
-      weight: 5
+      weight: 8
       params:
         icon: github
 
