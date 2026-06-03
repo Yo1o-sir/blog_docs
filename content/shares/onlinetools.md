@@ -9,3 +9,4 @@ type: docs
 
 - [temptom临时邮箱](https://www.temptom.com/zh/)
 - [somd5查询网站](https://www.somd5.com/)
+- [兔子二维码](https://tuzim.net/decode/)
