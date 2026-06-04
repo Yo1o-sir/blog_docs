@@ -7,3 +7,9 @@ comments: true
 
 喏，超级超级厚的一本书
 ![cs课本](./cs.jpg)
+
+{{< filetree/container >}}
+  {{< filetree/file name="attacklab" link="/study/homeworks/cs/attacklab/" >}}
+  {{< filetree/file name="boomlab" link="/study/homeworks/cs/boomlab/" >}}
+  {{< filetree/file name="datalab" link="/study/homeworks/cs/datalab/" >}}
+{{< /filetree/container >}}

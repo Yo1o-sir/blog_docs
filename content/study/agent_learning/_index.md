@@ -12,3 +12,7 @@ comments: true
 `调用api key` -> `编写skill` -> `封装mcp` -> `建立agent框架`
 
 大致上应该是这样吧，那么本学习笔记也会分为四章
+
+{{< filetree/container >}}
+  {{< filetree/file name="how to use API Key" link="/study/agent_learning/use_api_key/" >}}
+{{< /filetree/container >}}

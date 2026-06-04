@@ -8,3 +8,16 @@ weight: 1
 ---
 
 Yolo会记录不同平台的刷题记录，按照方向分类吧，主要是给自己看的，如果帮到大家也是很不错的
+
+{{< filetree/container >}}
+  {{< filetree/folder name="CTFShow" link="/training/ctfshow/" state="open" >}}
+    {{< filetree/file name="萌新篇" link="/training/ctfshow/_萌新/" >}}
+  {{< /filetree/folder >}}
+  {{< filetree/folder name="picoCTF" link="/training/picoctf/" state="open" >}}
+    {{< filetree/file name="misc" link="/training/picoctf/misc/" >}}
+  {{< /filetree/folder >}}
+  {{< filetree/folder name="Orphaned Problems" link="/training/orphaned-problems/" state="open" >}}
+    {{< filetree/file name="ezstack" link="/training/orphaned-problems/ezstack/" >}}
+    {{< filetree/file name="nameless pwn" link="/training/orphaned-problems/nameless_pwn/" >}}
+  {{< /filetree/folder >}}
+{{< /filetree/container >}}

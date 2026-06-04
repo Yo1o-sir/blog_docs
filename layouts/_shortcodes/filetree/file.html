@@ -1,0 +1,27 @@
+{{- /*
+A file in a file tree. (Project override: adds optional `link` for navigation.)
+
+@param {string} name The name of the file.
+@param {string} link Optional URL to navigate to when the file is clicked.
+
+@example {{< filetree/file name="_index.md" >}}
+@example {{< filetree/file name="某道题解" link="/training/problem-a/" >}}
+*/ -}}
+
+{{- $name := .Get "name" -}}
+{{- $link := .Get "link" -}}
+
+<li class="hx:flex hx:list-none">
+  {{- if $link -}}
+  {{- $href := cond (or (strings.HasPrefix $link "http") (strings.HasPrefix $link "#")) $link ($link | relURL) -}}
+  <a href="{{ $href }}" class="hextra-filetree-file hx:inline-flex hx:cursor-pointer hx:items-center hx:py-1 hx:hover:opacity-60">
+    {{- partial "utils/icon" (dict "name" "document-text" "attributes" "width=1em") -}}
+    <span class="hx:ltr:ml-1 hx:rtl:mr-1">{{ $name | markdownify }}</span>
+  </a>
+  {{- else -}}
+  <span class="hx:inline-flex hx:cursor-default hx:items-center hx:py-1">
+    {{- partial "utils/icon" (dict "name" "document-text" "attributes" "width=1em") -}}
+    <span class="hx:ltr:ml-1 hx:rtl:mr-1">{{ $name | markdownify }}</span>
+  </span>
+  {{- end -}}
+</li>
