@@ -31,9 +31,10 @@ cascade:
     {{< /filetree/folder >}}
     {{< filetree/folder name="homeworks" link="/study/homeworks/" state="open" >}}
       {{< filetree/folder name="cs" link="/study/homeworks/cs/" state="open" >}}
-        {{< filetree/file name="attacklab" link="/study/homeworks/cs/attacklab/" >}}
-        {{< filetree/file name="boomlab" link="/study/homeworks/cs/boomlab/" >}}
         {{< filetree/file name="datalab" link="/study/homeworks/cs/datalab/" >}}
+        {{< filetree/file name="boomlab" link="/study/homeworks/cs/boomlab/" >}}
+        {{< filetree/file name="attacklab" link="/study/homeworks/cs/attacklab/" >}}
+        {{< filetree/file name="linklab" link="/study/homeworks/cs/linklab/" >}}
       {{< /filetree/folder >}}
     {{< /filetree/folder >}}
   {{< /filetree/folder >}}
