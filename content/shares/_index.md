@@ -16,4 +16,5 @@ weight: 4
   {{< filetree/file name="ai&Provider" link="/shares/ai/" >}}
   {{< filetree/file name="CTF" link="/shares/ctf/" >}}
   {{< filetree/file name="Online tools" link="/shares/onlinetools/" >}}
+  {{< filetree/file name="Proxy" link="/shares/proxy/" >}}
 {{< /filetree/container >}}

@@ -6,5 +6,7 @@ title: Orphaned Problems
 
 {{< filetree/container >}}
   {{< filetree/file name="ezstack" link="/training/orphaned-problems/ezstack/" >}}
-  {{< filetree/file name="nameless pwn" link="/training/orphaned-problems/nameless_pwn/" >}}
+  {{< filetree/file name="nameless pwn1" link="/training/orphaned-problems/nameless_pwn/" >}}
+  {{< filetree/file name="out(dh+ecb)" link="/training/orphaned-problems/outdh+ecb/" >}}
+  {{< filetree/file name="nameless pwn2" link="/training/orphaned-problems/nameless_pwn2/" >}}
 {{< /filetree/container >}}

@@ -31,10 +31,6 @@ params:
   imageZoom:
     enable: true
 
-  math:
-    enable: true
-    library: katex
-
 menu:
   main:
     - name: 刷题
@@ -69,19 +65,5 @@ menu:
 
 markup:
   goldmark:
-    extensions:
-      passthrough:
-        enable: true
-        delimiters:
-          block:
-            - - \[
-              - \]
-            - - $$
-              - $$
-          inline:
-            - - \(
-              - \)
-            - - $
-              - $
     renderer:
       unsafe: true

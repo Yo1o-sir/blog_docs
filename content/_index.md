@@ -16,18 +16,28 @@ cascade:
     {{< filetree/folder name="CTFShow" link="/training/ctfshow/" state="open" >}}
       {{< filetree/file name="萌新篇" link="/training/ctfshow/_萌新/" >}}
     {{< /filetree/folder >}}
+    {{< filetree/folder name="MazeSec" link="/training/mazesec/" state="open" >}}
+      {{< filetree/file name="badbox" link="/training/mazesec/badbox/" >}}
+    {{< /filetree/folder >}}    
+    {{< filetree/folder name="Orphaned Problems" link="/training/orphaned-problems/" state="open" >}}
+      {{< filetree/file name="ezstack" link="/training/orphaned-problems/ezstack/" >}}
+      {{< filetree/file name="nameless pwn1" link="/training/orphaned-problems/nameless_pwn/" >}}
+      {{< filetree/file name="out(dh+ecb)" link="/training/orphaned-problems/outdh+ecb/" >}}
+      {{< filetree/file name="nameless pwn2" link="/training/orphaned-problems/nameless_pwn2/" >}}
+    {{< /filetree/folder >}}
     {{< filetree/folder name="picoCTF" link="/training/picoctf/" state="open" >}}
       {{< filetree/file name="misc" link="/training/picoctf/misc/" >}}
     {{< /filetree/folder >}}
-    {{< filetree/folder name="Orphaned Problems" link="/training/orphaned-problems/" state="open" >}}
-      {{< filetree/file name="ezstack" link="/training/orphaned-problems/ezstack/" >}}
-      {{< filetree/file name="nameless pwn" link="/training/orphaned-problems/nameless_pwn/" >}}
-    {{< /filetree/folder >}}
+
   {{< /filetree/folder >}}
 
   {{< filetree/folder name="Yolo の 学习笔记" link="/study/" state="closed" >}}
     {{< filetree/folder name="agent learning" link="/study/agent_learning/" state="open" >}}
       {{< filetree/file name="how to use API Key" link="/study/agent_learning/use_api_key/" >}}
+    {{< /filetree/folder >}}
+    {{< filetree/folder name="Crypto" link="/study/crypto/" state="open" >}}
+      {{< filetree/file name="AES" link="/study/crypto/aes/" >}}
+      {{< filetree/file name="Diffie-Hellman" link="/study/crypto/diffie-hellman/" >}}
     {{< /filetree/folder >}}
     {{< filetree/folder name="homeworks" link="/study/homeworks/" state="open" >}}
       {{< filetree/folder name="cs" link="/study/homeworks/cs/" state="open" >}}
@@ -44,8 +54,9 @@ cascade:
   {{< /filetree/folder >}}
 
   {{< filetree/folder name="Share lists" link="/shares/" state="closed" >}}
-    {{< filetree/file name="ai&Provider" link="/shares/ai/" >}}
     {{< filetree/file name="CTF" link="/shares/ctf/" >}}
+    {{< filetree/file name="ai&Provider" link="/shares/ai/" >}}
     {{< filetree/file name="Online tools" link="/shares/onlinetools/" >}}
+    {{< filetree/file name="Proxy" link="/shares/proxy" >}}
   {{< /filetree/folder >}}
 {{< /filetree/container >}}
