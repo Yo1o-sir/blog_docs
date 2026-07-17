@@ -28,3 +28,5 @@ Bob这边同理，这个时候，双方拿到了相同的共享密钥K
 ![公式](./index.assets/image-20260712162332487.png)
 
 至于这里的K加密密钥具体怎么用，还需要看题目要设计什么样的加密算法才行
+
+这里有个dh和ecb结合的一个例题，请看这篇[文章](https://docs.yo1o.top/training/orphaned-problems/outdh+ecb/)

@@ -1,6 +1,7 @@
 ---
 title: Crypto
 comments: true
+weight: 2
 ---
 
 我会记录学习密码学的过程中，遇到的不错的知识点

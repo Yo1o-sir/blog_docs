@@ -18,4 +18,5 @@ qq群：321948805
 
 {{< filetree/container >}}
   {{< filetree/file name="badbox" link="/training/mazesec/badbox/" >}}
+  {{< filetree/file name="Stream2" link="/training/mazesec/stream2/" >}}
 {{< /filetree/container >}}

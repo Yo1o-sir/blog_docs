@@ -10,12 +10,16 @@ weight: 2
 Yolo会在这里记录一些学习笔记，方向不会固定的，学到某个很有意思的知识点就会放到这里来
 
 {{< filetree/container >}}
-  {{< filetree/folder name="agent learning" link="/study/agent_learning/" state="open" >}}
-    {{< filetree/file name="how to use API Key" link="/study/agent_learning/use_api_key/" >}}
+  {{< filetree/folder name="Web" link="/study/web/" state="open" >}}
+    {{< filetree/file name="base tools" link="/study/web/base_tools/" >}}
+    {{< filetree/file name="basic knowledge" link="/study/web/basic_knowledge/" >}}
   {{< /filetree/folder >}}
   {{< filetree/folder name="Crypto" link="/study/crypto/" state="open" >}}
     {{< filetree/file name="AES" link="/study/crypto/aes/" >}}
     {{< filetree/file name="Diffie-Hellman" link="/study/crypto/diffie-hellman/" >}}
+  {{< /filetree/folder >}}
+  {{< filetree/folder name="agent learning" link="/study/agent_learning/" state="open" >}}
+    {{< filetree/file name="how to use API Key" link="/study/agent_learning/use_api_key/" >}}
   {{< /filetree/folder >}}
   {{< filetree/folder name="homeworks" link="/study/homeworks/" state="open" >}}
     {{< filetree/folder name="cs" link="/study/homeworks/cs/" state="open" >}}

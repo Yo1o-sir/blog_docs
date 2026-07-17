@@ -1,6 +1,7 @@
 ---
 title: agent learning
 comments: true
+weight: 3
 ---
 
 <img src="./_index.assets/ee0408aeeced83f28c5be751d40c0cec.jpg" alt="唉" style="zoom: 80%;" />

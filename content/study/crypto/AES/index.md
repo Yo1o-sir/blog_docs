@@ -13,4 +13,6 @@ type: docs
 
 再说说ECB，这是AES中的一个分组方式：明文分成固定的块，每个块分别进行加密，可以并行
 
+ECB涉及的一个例题，请看这篇[文章](https://docs.yo1o.top/training/orphaned-problems/outdh+ecb/)
+
 > 扩展，除了ECB电子密码本模式，还有CBC密码分组链接模式，CFB密文反馈模式
