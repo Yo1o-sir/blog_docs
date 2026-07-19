@@ -75,7 +75,7 @@ type: docs
 
 ## FoxyProxy
 
-这个是一款浏览器插件，应该主流浏览器插件市场里都能搜到吧，我这里用的是Firefox浏览器，官网下载地址：[https://www.firefox.com/zh-CN/thanks/](https://www.firefox.com/zh-CN/thanks/)
+这个是一款浏览器插件，应该主流浏览器插件市场里都能搜到吧，我这里用的是Firefox浏览器，浏览器官网下载地址：[https://www.firefox.com/zh-CN/thanks/](https://www.firefox.com/zh-CN/thanks/)
 
 下载好后，把一系列注册等操作完成后，在管理扩展中搜索`foxyproxy`并回车
 

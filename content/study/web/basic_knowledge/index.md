@@ -112,6 +112,7 @@ scheme:[//[userinfo@]host[:port]]path[?puery][#fragment]
 
 - User-Agent: UA头，每个HTTP请求都会带，它会包含我们所使用的操作系统版本、CPU、浏览器类型等信息，比如下面这个
   - ![ua](./index.assets/image-20260716131737145.png)
+- via: 这个头用于标识请求的来源，通常是上一级代理服务器的地址,常见于代理服务器中
 
 
 
@@ -243,7 +244,7 @@ scheme:[//[userinfo@]host[:port]]path[?puery][#fragment]
 
 ![hacker](./index.assets/image-20260718201919335.png)
 
-至于yakit的做法，如下：
+至于`yakit`的做法，如下：
 
 ![headers](./index.assets/image-20260718202039494.png)
 
@@ -252,4 +253,3 @@ scheme:[//[userinfo@]host[:port]]path[?puery][#fragment]
 基础知识关卡告一段落咯
 
 > 留意我出的题里，会看到部分关卡下面有个使用curl命令的示例，这算是第三种方法，仅仅利用命令行工具就能帮助我们完成发包等操作，但考虑到大家新接触web，这一个方法蛮吃操作的，就不多讲了
-
