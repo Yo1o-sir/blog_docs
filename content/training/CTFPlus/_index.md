@@ -7,4 +7,5 @@ title: CTFPlus
 
 {{< filetree/container >}}
   {{< filetree/file name="Crypto" link="/training/ctfplus/crypto" >}}
+  {{< filetree/file name="Web" link="/training/ctfplus/web" >}}
 {{< /filetree/container >}}

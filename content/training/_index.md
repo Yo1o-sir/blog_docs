@@ -12,6 +12,7 @@ Yolo会记录不同平台的刷题记录，按照方向分类吧，主要是给�
 {{< filetree/container >}}
   {{< filetree/folder name="CTFPlus" link="/training/ctfplus/" state="open" >}}
     {{< filetree/file name="Crypto" link="/training/ctfplus/crypto/" >}}
+    {{< filetree/file name="Web" link="/training/ctfplus/web/" >}}
   {{< /filetree/folder >}}
   {{< filetree/folder name="CTFShow" link="/training/ctfshow/" state="open" >}}
     {{< filetree/file name="萌新篇" link="/training/ctfshow/_萌新/" >}}
@@ -22,6 +23,7 @@ Yolo会记录不同平台的刷题记录，按照方向分类吧，主要是给�
   {{< filetree/folder name="MazeSec" link="/training/mazesec/" state="open" >}}
     {{< filetree/file name="badbox" link="/training/mazesec/badbox/" >}}
     {{< filetree/file name="Stream2" link="/training/mazesec/stream2/" >}}
+    {{< filetree/file name="Doable" link="/training/mazesec/doable/" >}}
   {{< /filetree/folder >}}
   {{< filetree/folder name="Orphaned Problems" link="/training/orphaned-problems/" state="open" >}}
     {{< filetree/file name="ezstack" link="/training/orphaned-problems/ezstack/" >}}
