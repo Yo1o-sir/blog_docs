@@ -1,0 +1,45 @@
+{{- /*
+A folder in a file tree. (Project override: adds optional `link` for navigation.)
+
+@param {string} name  The name of the folder.
+@param {string} state The state of the folder: "open" (default) or "closed".
+@param {string} link  Optional URL the folder name navigates to. When set,
+                      clicking the icon toggles children, clicking the name navigates.
+
+@example {{< filetree/folder name="docs" state="closed" >}}
+@example {{< filetree/folder name="Yolo の 刷题记录" link="/training/" state="open" >}}
+*/ -}}
+
+{{- $name := .Get "name" -}}
+{{- $state := .Get "state" | default "open" -}}
+{{- $link := .Get "link" -}}
+
+<li class="hx:group hx:flex hx:list-none hx:flex-col">
+  {{- if $link -}}
+  {{- $href := cond (or (strings.HasPrefix $link "http") (strings.HasPrefix $link "#")) $link ($link | relURL) -}}
+  <span class="hx:inline-flex hx:items-center hx:py-1">
+    <button class="hextra-filetree-folder hx:inline-flex hx:cursor-pointer hx:items-center hx:hover:opacity-60" aria-expanded="{{ if eq $state "open" }}true{{ else }}false{{ end }}">
+      <span data-state="{{ $state }}" class="hx:data-[state=open]:hidden">
+        {{- partial "utils/icon" (dict "name" "folder" "attributes" "width=1em") -}}
+      </span>
+      <span data-state="{{ $state }}" class="hx:data-[state=closed]:hidden">
+        {{- partial "utils/icon" (dict "name" "folder-open" "attributes" "width=1em") -}}
+      </span>
+    </button>
+    <a href="{{ $href }}" class="hextra-filetree-folder-link hx:ltr:ml-1 hx:rtl:mr-1 hx:cursor-pointer hx:hover:opacity-60">{{ $name }}</a>
+  </span>
+  {{- else -}}
+  <button class="hextra-filetree-folder hx:inline-flex hx:cursor-pointer hx:items-center hx:py-1 hx:hover:opacity-60" aria-expanded="{{ if eq $state "open" }}true{{ else }}false{{ end }}">
+    <span data-state="{{ $state }}" class="hx:data-[state=open]:hidden">
+      {{- partial "utils/icon" (dict "name" "folder" "attributes" "width=1em") -}}
+    </span>
+    <span data-state="{{ $state }}" class="hx:data-[state=closed]:hidden">
+      {{- partial "utils/icon" (dict "name" "folder-open" "attributes" "width=1em") -}}
+    </span>
+    <span class="hx:ltr:ml-1 hx:rtl:mr-1">{{ $name }}</span>
+  </button>
+  {{- end -}}
+  <ul data-state="{{ $state }}" class="hx:ltr:pl-5 hx:rtl:pr-5 hx:data-[state=closed]:hidden">
+    {{- .InnerDeindent -}}
+  </ul>
+</li>
