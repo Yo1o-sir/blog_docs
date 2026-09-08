@@ -6,4 +6,5 @@ title: CTFShow
 
 {{< filetree/container >}}
   {{< filetree/file name="萌新篇" link="/training/ctfshow/_萌新/" >}}
+  {{< filetree/file name="PWN" link="/training/ctfshow/pwn/" >}}
 {{< /filetree/container >}}
