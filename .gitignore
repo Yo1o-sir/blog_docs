@@ -1,1 +1,17 @@
+# 只上传博客静态文章资源: content/ 下内容 + static/CNAME
+# 其余 config / 构建 / 主题 / 工具链文件一律不跟踪、不上传
 public/
+.hugo_build.lock
+hugo.yaml
+go.mod
+go.sum
+archetypes/
+assets/
+data/
+i18n/
+layouts/
+resources/
+themes/
+.claude/
+*.log
+.DS_Store
