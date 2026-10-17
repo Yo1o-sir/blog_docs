@@ -13,6 +13,8 @@ Yolo会在这里记录一些学习笔记，方向不会固定的，学到某个�
   {{< filetree/folder name="Web" link="/study/web/" state="open" >}}
     {{< filetree/file name="base tools" link="/study/web/base_tools/" >}}
     {{< filetree/file name="basic knowledge" link="/study/web/basic_knowledge/" >}}
+    {{< filetree/file name="bypass 127.0.0.1 " link="/study/web/bypass_127.0.0.1/" >}}
+    {{< filetree/file name="xxe" link="/study/web/xxe/" >}}
   {{< /filetree/folder >}}
   {{< filetree/folder name="Crypto" link="/study/crypto/" state="open" >}}
     {{< filetree/file name="AES" link="/study/crypto/aes/" >}}

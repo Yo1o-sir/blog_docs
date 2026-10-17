@@ -13,3 +13,4 @@ type: docs
 - [CTFShow](https://ctf.show)
 - [ctf::review](https://gz.imxbt.cn)
 - [cryptohack](https://cryptohack.org/challenges/)
+- [CTF2(原buuctf)](https://ctf2.dasctf.com/explorer)

